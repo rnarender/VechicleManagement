@@ -28,6 +28,8 @@ import { VehiclesListComponent } from './vehicles-list/vehicles-list.component';
 import { PaginationComponent } from "./shared/pagination.component";
 import { ViewVehicleComponent } from './view-vehicle/view-vehicle.component';
 import { PhotoService } from "./services/photo.service";
+import { BrowserXhr } from '@angular/http';
+import { BrowserXhrWithProgress, ProgressService } from "./services/progress.service";
 
 
 
@@ -65,8 +67,10 @@ import { PhotoService } from "./services/photo.service";
   ],
   providers: [
     { provide: ErrorHandler, useClass: AppErrorHandler },
+    { provide: BrowserXhr, useClass: BrowserXhrWithProgress },
     VehicleService,
-    PhotoService
+    PhotoService,
+    ProgressService
   ],
   bootstrap: [AppComponent]
 })

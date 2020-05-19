@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using vega.Core;
 using vega.Persistence;
 using Vega.Core.Models;
+using Vega.Persistence;
 
 namespace vega
 {
@@ -27,14 +29,26 @@ namespace vega
         {
 			services.Configure<PhotoSettings>(Configuration.GetSection("PhotoSettings"));
 			services.AddScoped<IVehicleRepository, VehicleRepository>();
+			services.AddScoped<IPhotoRepository, PhotoRepository>();
 			services.AddScoped<IUnitOfWork, UnitOfWork>();
 			services.AddAutoMapper(typeof(Startup));
 			services.AddDbContext<VegaDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration =>
+			// 1. Add Authentication Services
+			services.AddAuthentication(options =>
+			{
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			}).AddJwtBearer(options =>
+			{
+				options.Authority = "https://vegaproject8919.auth0.com/";
+				options.Audience = "https://api.vega8919.com";
+			});
+
+			// In production, the Angular files will be served from this directory
+			services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/dist";
             });
@@ -57,7 +71,10 @@ namespace vega
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
-            app.UseMvc(routes =>
+			// 2. Enable authentication middleware
+			app.UseAuthentication();
+
+			app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",

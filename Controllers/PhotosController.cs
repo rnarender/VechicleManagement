@@ -20,17 +20,29 @@ namespace vega.Controllers
     {
 		private readonly IHostingEnvironment host;
 		private readonly IVehicleRepository repository;
+		private readonly IPhotoRepository photoRepository;
 		private readonly IUnitOfWork unitOfWork;
 		private readonly IMapper mapper;
 		private readonly PhotoSettings photoSettings;
-		public PhotosController(IHostingEnvironment host, IVehicleRepository repository, IUnitOfWork unitOfWork, IMapper mapper, IOptionsSnapshot<PhotoSettings> options)
+		public PhotosController(IHostingEnvironment host, IVehicleRepository repository, IPhotoRepository photoRepository, IUnitOfWork unitOfWork, IMapper mapper, IOptionsSnapshot<PhotoSettings> options)
 		{
 			this.photoSettings = options.Value;
 			this.host = host;
 			this.repository = repository;
+			this.photoRepository = photoRepository;
 			this.unitOfWork = unitOfWork;
 			this.mapper = mapper;
 		}
+
+
+		[HttpGet]
+		public async Task<IEnumerable<PhotoResource>> GetPhotos(int vehicleId)
+		{
+			var photos = await photoRepository.GetPhotos(vehicleId);
+
+			return mapper.Map<IEnumerable<Photo>, IEnumerable<PhotoResource>>(photos);
+		}
+
 		[HttpPost]
 		public async Task<IActionResult> Upload(int vehicleId, IFormFile file)
 		{
@@ -40,8 +52,8 @@ namespace vega.Controllers
 
 			if (file == null) return BadRequest("Null File");
 			if (file.Length == 0) return BadRequest("Empty File");
-			if (file.Length > photoSettings.MaxBytes) return BadRequest("Max file size Exceeded");
-			//if (!photoSettings.IsSupported(file.FileName)) return BadRequest("Invalid file type");
+			//if (file.Length > photoSettings.MaxBytes) return BadRequest("Max file size Exceeded");
+			if (!photoSettings.IsSupported(file.FileName)) return BadRequest("Invalid file type");
 
 			var uploadsFolderPath =  Path.Combine(host.WebRootPath, "uploads");
 			if (!Directory.Exists(uploadsFolderPath))
